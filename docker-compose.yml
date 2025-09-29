@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    container_name: db_p1
+    restart: always
+    environment:
+      POSTGRES_USER: p1_user
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: p1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  backend:
+    build: ./backend
+    container_name: backend_p1
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8111:8000"
+    depends_on:
+      - db
+    environment:
+      - DB_NAME=p1
+      - DB_USER=p1_user
+      - DB_PASSWORD=1234
+      - DB_HOST=db
+      - DB_PORT=5432
+
+  frontend:
+    build: ./frontend
+    container_name: frontend_p1
+    command: npm start
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
