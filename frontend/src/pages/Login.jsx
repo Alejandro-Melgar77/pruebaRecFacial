@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";   // 👈 para redirigir
-import { login as loginApi } from "../api";      // 👈 renombramos para no chocar con loginContext
+import { useNavigate } from "react-router-dom";
+import { login as loginApi } from "../api";
 import { AuthContext } from "../context/AuthContext";
 
 export default function Login() {
@@ -9,32 +9,70 @@ export default function Login() {
 
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); // 👈 Para mostrar un spinner al enviar
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError(""); // Limpiar error cuando el usuario empiece a escribir
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validaciones básicas
+    if (!formData.username.trim() || !formData.password.trim()) {
+      setError("Por favor completa todos los campos");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      const res = await loginApi(formData);
-      console.log("Respuesta del backend:", res.data.user);
+      const response = await loginApi(formData);
+      console.log("✅ Login exitoso:", response.data);
 
-      loginContext(res.data);
+      // 👇 Asegurar que los datos del usuario estén normalizados
+      const userData = response.data.user || response.data;
+      
+      loginContext({
+        access: response.data.access,
+        refresh: response.data.refresh,
+        user: userData
+      });
 
-      // 🔥 Cambiado de 'role' a 'user_type'
-      if (res.data.user.user_type === "admin") {
-        navigate("/admin-dashboard");
-      } else {
-        navigate("/dashboard");
+      // 👇 Redirigir según el tipo de usuario (usar user_type)
+      const userType = userData.user_type || userData.role;
+      
+      switch (userType) {
+        case "admin":
+          navigate("/admin-dashboard");
+          break;
+        case "security":
+          navigate("/security-events");
+          break;
+        case "maintenance":
+          navigate("/dashboard");
+          break;
+        case "resident":
+          navigate("/dashboard");
+          break;
+        default:
+          navigate("/dashboard");
       }
+
     } catch (err) {
-      console.error("Error en login:", err);
-      setError("Usuario o contraseña incorrectos");
+      console.error("❌ Error en login:", err);
+      
+      if (err.response?.status === 401) {
+        setError("Usuario o contraseña incorrectos");
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else if (err.message === "Network Error") {
+        setError("Error de conexión. Verifica que el servidor esté ejecutándose.");
+      } else {
+        setError("Error al iniciar sesión. Intenta nuevamente.");
+      }
     } finally {
       setLoading(false);
     }
@@ -46,75 +84,119 @@ export default function Login() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        height: "100vh",
-        backgroundColor: "#f0f2f5",
+        minHeight: "100vh",
+        backgroundColor: "#f8f9fa",
+        padding: "20px",
       }}
     >
       <div
         style={{
           backgroundColor: "white",
-          padding: "30px",
-          borderRadius: "10px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+          padding: "40px",
+          borderRadius: "12px",
+          boxShadow: "0 8px 24px rgba(0, 0, 0, 0.1)",
           width: "100%",
-          maxWidth: "400px",
+          maxWidth: "420px",
+          border: "1px solid #e9ecef",
         }}
       >
-        <h2
-          style={{
-            textAlign: "center",
-            marginBottom: "20px",
-            color: "#333",
+        <div style={{ textAlign: "center", marginBottom: "30px" }}>
+          <h2 style={{ 
+            color: "#2c3e50", 
+            marginBottom: "8px",
             fontWeight: "600",
-          }}
-        >
-          Iniciar Sesión
-        </h2>
+            fontSize: "28px"
+          }}>
+            Bienvenido
+          </h2>
+          <p style={{ 
+            color: "#7f8c8d", 
+            fontSize: "16px",
+            margin: 0
+          }}>
+            Inicia sesión en tu cuenta
+          </p>
+        </div>
 
         {error && (
-          <p
+          <div
             style={{
-              color: "red",
-              textAlign: "center",
-              marginBottom: "15px",
+              backgroundColor: "#fee",
+              color: "#c53030",
+              padding: "12px 16px",
+              borderRadius: "6px",
+              marginBottom: "20px",
+              border: "1px solid #fed7d7",
+              fontSize: "14px",
+              textAlign: "center"
             }}
           >
-            {error}
-          </p>
+            ⚠️ {error}
+          </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "15px" }}>
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ 
+              display: "block", 
+              marginBottom: "6px", 
+              fontWeight: "500",
+              color: "#2c3e50",
+              fontSize: "14px"
+            }}>
+              Usuario
+            </label>
             <input
               type="text"
               name="username"
-              placeholder="Usuario"
+              placeholder="Ingresa tu usuario"
+              value={formData.username}
               onChange={handleChange}
               required
+              disabled={loading}
               style={{
                 width: "100%",
-                padding: "12px",
+                padding: "14px",
                 border: "1px solid #ddd",
-                borderRadius: "6px",
+                borderRadius: "8px",
                 fontSize: "16px",
+                transition: "border-color 0.2s",
+                backgroundColor: loading ? "#f8f9fa" : "white"
               }}
+              onFocus={(e) => e.target.style.borderColor = "#3498db"}
+              onBlur={(e) => e.target.style.borderColor = "#ddd"}
             />
           </div>
 
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ marginBottom: "25px" }}>
+            <label style={{ 
+              display: "block", 
+              marginBottom: "6px", 
+              fontWeight: "500",
+              color: "#2c3e50",
+              fontSize: "14px"
+            }}>
+              Contraseña
+            </label>
             <input
               type="password"
               name="password"
-              placeholder="Contraseña"
+              placeholder="Ingresa tu contraseña"
+              value={formData.password}
               onChange={handleChange}
               required
+              disabled={loading}
               style={{
                 width: "100%",
-                padding: "12px",
+                padding: "14px",
                 border: "1px solid #ddd",
-                borderRadius: "6px",
+                borderRadius: "8px",
                 fontSize: "16px",
+                transition: "border-color 0.2s",
+                backgroundColor: loading ? "#f8f9fa" : "white"
               }}
+              onFocus={(e) => e.target.style.borderColor = "#3498db"}
+              onBlur={(e) => e.target.style.borderColor = "#ddd"}
             />
           </div>
 
@@ -123,19 +205,37 @@ export default function Login() {
             disabled={loading}
             style={{
               width: "100%",
-              padding: "12px",
-              backgroundColor: "#007bff",
+              padding: "14px",
+              backgroundColor: loading ? "#95a5a6" : "#2ecc71",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "8px",
               fontSize: "16px",
+              fontWeight: "600",
               cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.7 : 1,
+              transition: "background-color 0.2s",
+              marginBottom: "20px"
             }}
           >
-            {loading ? "Iniciando sesión..." : "Entrar"}
+            {loading ? "🔄 Iniciando sesión..." : "🚀 Iniciar Sesión"}
           </button>
         </form>
+
+        <div style={{ textAlign: "center" }}>
+          <p style={{ color: "#7f8c8d", fontSize: "14px", margin: 0 }}>
+            ¿No tienes cuenta?{" "}
+            <a 
+              href="/register" 
+              style={{ 
+                color: "#3498db", 
+                textDecoration: "none",
+                fontWeight: "500"
+              }}
+            >
+              Regístrate aquí
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

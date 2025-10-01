@@ -110,7 +110,7 @@ class FaceRecordSerializer(serializers.ModelSerializer):
 class SecurityEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = SecurityEvent
-        fields = ['id', 'event_type', 'description', 'timestamp', 'image']
+        fields = ['id', 'event_type', 'description', 'timestamp', 'image', 'user']
 
 # ------------------------
 # Serializer para Registro

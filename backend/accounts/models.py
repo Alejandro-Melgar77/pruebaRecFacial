@@ -122,11 +122,19 @@ class SecurityEvent(models.Model):
         ('face_recognition', 'Face Recognition'),
         ('plate_recognition', 'Plate Recognition'),
         ('unauthorized_access', 'Unauthorized Access'),
+        ('suspicious_activity', 'Suspicious Activity'),
     ]
     event_type = models.CharField(max_length=30, choices=EVENT_TYPES)
     description = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to='security_images/', null=True, blank=True)
+    user = models.ForeignKey(  # 👈 NUEVO CAMPO AGREGADO
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='security_events'
+    )
 
     def __str__(self):
         return f"{self.event_type} - {self.timestamp}"

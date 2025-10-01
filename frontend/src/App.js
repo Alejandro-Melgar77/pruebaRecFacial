@@ -4,7 +4,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
-import PrivateRoute from "./PrivateRoute"; // Asegúrate de la ruta correcta
+import PrivateRoute from './PrivateRoute' // Asegúrate de la ruta correcta
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import RoleManagement from "./pages/RoleManagement";

@@ -15,6 +15,9 @@ from decouple import config
 import os
 from datetime import timedelta
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 # ------------------------
 # Google Cloud Credentials
 # ------------------------
@@ -23,10 +26,6 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = config(
     "GOOGLE_APPLICATION_CREDENTIALS", 
     default="smart-condominium-credentials.json"
 )
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/  
@@ -37,7 +36,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 
 # Application definition
@@ -50,21 +49,22 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-
+    # Third party apps
     'rest_framework',
     'rest_framework_simplejwt',
-    'accounts',
     'corsheaders',
+
+    # Local apps
+    'accounts',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
 
-
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # 👈 debe ir primero después de SecurityMiddleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # 👈 debe ir arriba de CommonMiddleware
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -107,7 +107,7 @@ DATABASES = {
 
 
 # Password validation
-#   https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -126,11 +126,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-#   https://docs.djangoproject.com/en/4.2/topics/i18n/  
+# https://docs.djangoproject.com/en/4.2/topics/i18n/  
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-es'  # Cambiado a español
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Argentina/Buenos_Aires'  # Ajusta según tu zona horaria
 
 USE_I18N = True
 
@@ -141,11 +141,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/  
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Media files (uploaded images)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ------------------------
+# Django REST Framework
+# ------------------------
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -154,20 +163,167 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
+    ),
 }
 
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-# O si quieres permitir todos en desarrollo:
-CORS_ALLOW_ALL_ORIGINS = True
-
+# ------------------------
+# JWT Configuration
+# ------------------------
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'JTI_CLAIM': 'jti',
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=60),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+
+# ------------------------
+# CORS Configuration
+# ------------------------
+
+CORS_ALLOW_ALL_ORIGINS = True  # Solo en desarrollo
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-access-token',
+]
+
+# ------------------------
+# Face Recognition Configuration
+# ------------------------
+
+FACE_RECOGNITION_TOLERANCE = 0.6
+FACE_RECOGNITION_MODEL = 'hog'  # 'hog' para CPU, 'cnn' para GPU (requiere GPU)
+
+# ------------------------
+# File Upload Configuration
+# ------------------------
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+
+# ------------------------
+# Security Settings (para producción)
+# ------------------------
+
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+
+# ------------------------
+# Logging Configuration
+# ------------------------
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'debug.log'),
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'accounts': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+# ------------------------
+# Crear directorios necesarios al inicio
+# ------------------------
+
+# Crear directorios media necesarios
+os.makedirs(os.path.join(MEDIA_ROOT, 'security_images'), exist_ok=True)
+os.makedirs(os.path.join(MEDIA_ROOT, 'maintenance_requests'), exist_ok=True)
+os.makedirs(os.path.join(MEDIA_ROOT, 'face_images'), exist_ok=True)
+os.makedirs(os.path.join(MEDIA_ROOT, 'visitor_qr'), exist_ok=True)
+
+# Crear directorio de logs
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
+
+print(f"Media root: {MEDIA_ROOT}")
+print(f"Static root: {STATIC_ROOT}")

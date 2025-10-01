@@ -1,47 +1,59 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
+import { getExpenses, getReservations, getNotifications } from "../api";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
-  const [avisos, setAvisos] = useState([]);
-  const [unidades, setUnidades] = useState([]);
-  const [reservas, setReservas] = useState([]);
-  const [notificaciones, setNotificaciones] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const token = localStorage.getItem("access");
+  // 👇 Obtener el tipo de usuario de manera compatible
+  const getUserType = () => {
+    return user?.user_type || user?.role || 'Usuario';
+  };
 
-  // Cargar datos del residente
+  // Cargar datos del usuario
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Avisos
-        const avisosRes = await axios.get("http://localhost:8000/api/auth/avisos/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setAvisos(avisosRes.data);
+        setLoading(true);
+        setError("");
 
-        // Unidades asignadas
-        const unidadesRes = await axios.get("http://localhost:8000/api/auth/units/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        // Filtrar unidades donde el usuario es residente
-        setUnidades(unidadesRes.data.filter(u => u.residents.some(r => r.id === user.id)));
+        // Cargar expensas
+        try {
+          const expensesRes = await getExpenses();
+          setExpenses(expensesRes.data.slice(0, 5)); // Últimas 5 expensas
+        } catch (err) {
+          console.warn("No se pudieron cargar las expensas:", err);
+        }
 
-        // Reservas del usuario
-        const reservasRes = await axios.get("http://localhost:8000/api/auth/reservations/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setReservas(reservasRes.data.filter(r => r.user.id === user.id));
+        // Cargar reservas
+        try {
+          const reservationsRes = await getReservations();
+          // Filtrar reservas del usuario actual
+          const userReservations = reservationsRes.data.filter(
+            r => r.user?.id === user?.id || r.user === user?.id
+          );
+          setReservations(userReservations.slice(0, 3)); // Próximas 3 reservas
+        } catch (err) {
+          console.warn("No se pudieron cargar las reservas:", err);
+        }
 
-        // Notificaciones
-        // Este endpoint no está en tus vistas actuales, pero puedes crearlo
-        // setNotificaciones(...);
+        // Cargar notificaciones
+        try {
+          const notificationsRes = await getNotifications();
+          setNotifications(notificationsRes.data.slice(0, 5)); // Últimas 5 notificaciones
+        } catch (err) {
+          console.warn("No se pudieron cargar las notificaciones:", err);
+        }
+
       } catch (err) {
-        setError("Error al cargar datos del usuario");
-        console.error(err);
+        console.error("Error general:", err);
+        setError("Error al cargar los datos del dashboard");
       } finally {
         setLoading(false);
       }
@@ -52,7 +64,20 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  if (loading) return <div>Cargando dashboard...</div>;
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '50vh',
+        fontSize: '18px',
+        color: '#2c3e50'
+      }}>
+        <div>🔄 Cargando dashboard...</div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -75,183 +100,259 @@ export default function Dashboard() {
           marginBottom: "20px",
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "24px",
-            fontWeight: "600",
-            color: "#2c3e50",
-          }}
-        >
-          Bienvenido, {user?.first_name || user?.username}
-        </h1>
-        <span
-          style={{
-            color: "#7f8c8d",
-            fontSize: "14px",
-          }}
-        >
-          Rol: {user?.user_type}
-        </span>
+        <div>
+          <h1
+            style={{
+              margin: "0 0 5px 0",
+              fontSize: "24px",
+              fontWeight: "600",
+              color: "#2c3e50",
+            }}
+          >
+            🏠 Bienvenido, {user?.first_name || user?.username}
+          </h1>
+          <span
+            style={{
+              color: "#7f8c8d",
+              fontSize: "14px",
+            }}
+          >
+            Rol: {getUserType()}
+          </span>
+        </div>
+        
+        {/* Acciones rápidas según el tipo de usuario */}
+        <div style={{ display: "flex", gap: "10px" }}>
+          {(getUserType() === 'resident' || getUserType() === 'admin') && (
+            <Link 
+              to="/reserve-area" 
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#3498db",
+                color: "white",
+                textDecoration: "none",
+                borderRadius: "4px",
+                fontSize: "14px",
+              }}
+            >
+              🗓️ Reservar Área
+            </Link>
+          )}
+          
+          <Link 
+            to="/view-bills" 
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#2ecc71",
+              color: "white",
+              textDecoration: "none",
+              borderRadius: "4px",
+              fontSize: "14px",
+            }}
+          >
+            💰 Ver Expensas
+          </Link>
+        </div>
       </header>
 
       {error && (
-        <p
+        <div
           style={{
-            color: "red",
-            textAlign: "center",
-            marginBottom: "15px",
+            backgroundColor: "#fee",
+            color: "#c53030",
+            padding: "12px 16px",
+            borderRadius: "6px",
+            marginBottom: "20px",
+            border: "1px solid #fed7d7",
           }}
         >
-          {error}
-        </p>
+          ⚠️ {error}
+        </div>
       )}
 
       <main>
-        {/* Avisos recientes */}
-        <section
+        <div
           style={{
-            backgroundColor: "white",
-            padding: "20px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "20px",
             marginBottom: "20px",
           }}
         >
-          <h2
-            style={{
-              fontSize: "20px",
-              color: "#2c3e50",
-              marginBottom: "15px",
-            }}
-          >
-            Avisos Recientes
-          </h2>
-          {avisos.length > 0 ? (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-              }}
-            >
-              {avisos.slice(0, 3).map((aviso) => (
-                <li
-                  key={aviso.id}
-                  style={{
-                    padding: "10px",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  <h3
-                    style={{
-                      margin: "0 0 5px 0",
-                      color: "#34495e",
-                    }}
-                  >
-                    {aviso.titulo}
-                  </h3>
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "#7f8c8d",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {new Date(aviso.created_at).toLocaleDateString()}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No hay avisos recientes.</p>
-          )}
-        </section>
+          {/* Notificaciones */}
+          <section style={sectionStyle}>
+            <h2 style={sectionTitleStyle}>
+              🔔 Notificaciones Recientes
+            </h2>
+            {notifications.length > 0 ? (
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {notifications.map((notification) => (
+                  <li key={notification.id} style={listItemStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <h4 style={{ margin: "0 0 5px 0", color: "#2c3e50", fontSize: "14px" }}>
+                          {notification.title}
+                        </h4>
+                        <p style={{ margin: 0, color: "#7f8c8d", fontSize: "12px" }}>
+                          {notification.message}
+                        </p>
+                      </div>
+                      <span style={{ color: "#bdc3c7", fontSize: "11px", whiteSpace: 'nowrap' }}>
+                        {new Date(notification.sent_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p style={{ color: "#7f8c8d", textAlign: "center", margin: "20px 0" }}>
+                No hay notificaciones recientes
+              </p>
+            )}
+          </section>
 
-        {/* Unidades asignadas */}
-        <section
-          style={{
-            backgroundColor: "white",
-            padding: "20px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-            marginBottom: "20px",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "20px",
-              color: "#2c3e50",
-              marginBottom: "15px",
-            }}
-          >
-            Tus Unidades
-          </h2>
-          {unidades.length > 0 ? (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-              }}
-            >
-              {unidades.map((unidad) => (
-                <li
-                  key={unidad.id}
-                  style={{
-                    padding: "10px",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  <strong>{unidad.number}</strong> - Piso {unidad.floor}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No tienes unidades asignadas.</p>
-          )}
-        </section>
+          {/* Próximas Expensas */}
+          <section style={sectionStyle}>
+            <h2 style={sectionTitleStyle}>
+              💰 Próximas Expensas
+            </h2>
+            {expenses.length > 0 ? (
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {expenses.map((expense) => (
+                  <li key={expense.id} style={listItemStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h4 style={{ margin: "0 0 5px 0", color: "#2c3e50", fontSize: "14px" }}>
+                          {expense.period} - {expense.description}
+                        </h4>
+                        <p style={{ margin: 0, color: "#7f8c8d", fontSize: "12px" }}>
+                          Vence: {new Date(expense.due_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <strong style={{ color: "#e74c3c", fontSize: "14px" }}>
+                          ${expense.amount}
+                        </strong>
+                        <div style={{ 
+                          fontSize: "10px", 
+                          padding: "2px 6px", 
+                          borderRadius: "10px", 
+                          backgroundColor: expense.status === 'PAGADA' ? "#d4edda" : "#f8d7da",
+                          color: expense.status === 'PAGADA' ? "#155724" : "#721c24",
+                          marginTop: "4px"
+                        }}>
+                          {expense.status}
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p style={{ color: "#7f8c8d", textAlign: "center", margin: "20px 0" }}>
+                No hay expensas pendientes
+              </p>
+            )}
+          </section>
+        </div>
 
-        {/* Próximas reservas */}
-        <section
-          style={{
-            backgroundColor: "white",
-            padding: "20px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "20px",
-              color: "#2c3e50",
-              marginBottom: "15px",
-            }}
-          >
-            Tus Próximas Reservas
-          </h2>
-          {reservas.length > 0 ? (
-            <ul
+        {/* Próximas Reservas */}
+        <section style={sectionStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h2 style={{ ...sectionTitleStyle, margin: 0 }}>
+              🗓️ Tus Próximas Reservas
+            </h2>
+            <Link 
+              to="/reserve-area" 
               style={{
-                listStyle: "none",
-                padding: 0,
+                padding: "6px 12px",
+                backgroundColor: "#3498db",
+                color: "white",
+                textDecoration: "none",
+                borderRadius: "4px",
+                fontSize: "12px",
               }}
             >
-              {reservas.slice(0, 3).map((reserva) => (
-                <li
-                  key={reserva.id}
-                  style={{
-                    padding: "10px",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  <strong>{reserva.area.name}</strong> - {new Date(reserva.date).toLocaleDateString()} de {reserva.start_time} a {reserva.end_time}
+              Nueva Reserva
+            </Link>
+          </div>
+          
+          {reservations.length > 0 ? (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {reservations.map((reservation) => (
+                <li key={reservation.id} style={listItemStyle}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h4 style={{ margin: "0 0 5px 0", color: "#2c3e50", fontSize: "14px" }}>
+                        {reservation.area?.name || 'Área común'}
+                      </h4>
+                      <p style={{ margin: 0, color: "#7f8c8d", fontSize: "12px" }}>
+                        📅 {new Date(reservation.date).toLocaleDateString()} 
+                        <br />
+                        ⏰ {reservation.start_time} - {reservation.end_time}
+                      </p>
+                    </div>
+                    <span style={{ 
+                      fontSize: "10px", 
+                      padding: "4px 8px", 
+                      borderRadius: "12px", 
+                      backgroundColor: "#d4edda",
+                      color: "#155724"
+                    }}>
+                      Confirmada
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p>No tienes reservas próximas.</p>
+            <div style={{ textAlign: "center", padding: "20px" }}>
+              <p style={{ color: "#7f8c8d", margin: "0 0 15px 0" }}>
+                No tienes reservas programadas
+              </p>
+              <Link 
+                to="/reserve-area" 
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#2ecc71",
+                  color: "white",
+                  textDecoration: "none",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                }}
+              >
+                🗓️ Hacer mi primera reserva
+              </Link>
+            </div>
           )}
         </section>
       </main>
     </div>
   );
 }
+
+// Estilos reutilizables
+const sectionStyle = {
+  backgroundColor: "white",
+  padding: "20px",
+  borderRadius: "8px",
+  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+};
+
+const sectionTitleStyle = {
+  fontSize: "18px",
+  color: "#2c3e50",
+  marginBottom: "15px",
+  fontWeight: "600",
+};
+
+const listItemStyle = {
+  padding: "12px 0",
+  borderBottom: "1px solid #eee",
+};
+
+// Estilo para el último item sin borde
+const lastListItemStyle = {
+  ...listItemStyle,
+  borderBottom: "none",
+};

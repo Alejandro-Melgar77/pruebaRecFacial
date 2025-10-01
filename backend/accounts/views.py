@@ -36,8 +36,8 @@ from .models import (
     Visitor,
     FaceRecord,
     SecurityEvent,
-    Notification,  # 👈 Importamos el nuevo modelo
-    MaintenanceRequest,  # 👈 Importamos el nuevo modelo
+    Notification,
+    MaintenanceRequest,
 )
 from .serializers import (
     UserSerializer,
@@ -49,8 +49,8 @@ from .serializers import (
     VisitorSerializer,
     FaceRecordSerializer,
     SecurityEventSerializer,
-    NotificationSerializer,  # 👈 Importamos el nuevo serializador
-    MaintenanceRequestSerializer,  # 👈 Importamos el nuevo serializador
+    NotificationSerializer,
+    MaintenanceRequestSerializer,
     RegisterSerializer,
 )
 
@@ -317,11 +317,10 @@ def generate_financial_report(request):
     return response
 
 # ------------------------
-# Reconocimiento facial
+# Reconocimiento facial CORREGIDO
 # ------------------------
 
-from .face_recognition_utils import save_face_encoding, recognize_face
-
+from .face_recognition_utils import save_face_encoding, recognize_face, get_face_encoding_from_base64, compare_faces
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -336,21 +335,33 @@ def register_face(request):
     if not image_data:
         return Response({'error': 'No image provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Decodificar imagen base64
     try:
-        img_binary = base64.b64decode(image_data)
-        img = Image.open(io.BytesIO(img_binary))
-        img_path = f'/tmp/{user.id}_face.jpg'  # temporal
-        img.save(img_path)
+        # Procesar imagen directamente en memoria
+        encoding = get_face_encoding_from_base64(image_data)
+        
+        if encoding is not None:
+            # Convertir encoding numpy array a string
+            encoding_str = ','.join(map(str, encoding))
+            
+            # Crear o actualizar registro facial
+            face_record, created = FaceRecord.objects.get_or_create(user=user)
+            face_record.face_encoding = encoding_str
+            face_record.save()
+            
+            return Response({
+                'message': 'Face registered successfully',
+                'face_record_id': face_record.id
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                'error': 'No face detected in image'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
     except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    success = save_face_encoding(user, img_path)
-    if success:
-        return Response({'message': 'Face registered successfully'}, status=status.HTTP_201_CREATED)
-    else:
-        return Response({'error': 'No face detected in image'}, status=status.HTTP_400_BAD_REQUEST)
-
+        print(f"Error in register_face: {str(e)}")
+        return Response({
+            'error': f'Error processing image: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -358,25 +369,70 @@ def recognize_face_view(request):
     """
     Vista para reconocer un rostro enviado desde la cámara.
     """
-    image_data = request.data.get('image')  # Imagen en base64
+    image_data = request.data.get('image')
 
     if not image_data:
         return Response({'error': 'No image provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Decodificar imagen base64
     try:
-        img_binary = base64.b64decode(image_data)
-        img = Image.open(io.BytesIO(img_binary))
-        img_path = f'/tmp/unknown_face.jpg'  # temporal
-        img.save(img_path)
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        # Procesar imagen en memoria
+        unknown_encoding = get_face_encoding_from_base64(image_data)
+        
+        if unknown_encoding is None:
+            return Response({
+                'message': 'No face detected in image'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-    user = recognize_face(img_path)
-    if user:
-        return Response({'user': UserSerializer(user).data}, status=status.HTTP_200_OK)
-    else:
-        return Response({'message': 'Unknown face'}, status=status.HTTP_404_NOT_FOUND)
+        # Comparar con todos los rostros registrados
+        face_records = FaceRecord.objects.select_related('user').all()
+        
+        recognized_user = None
+        confidence = 0
+
+        for record in face_records:
+            try:
+                known_encoding = np.array(list(map(float, record.face_encoding.split(','))))
+                result, distance = compare_faces(known_encoding, unknown_encoding)
+                
+                if result and distance < 0.6:  # Tolerancia ajustable
+                    recognized_user = record.user
+                    confidence = float(1 - distance)
+                    break
+                    
+            except (ValueError, IndexError) as e:
+                print(f"Error processing face record for user {record.user.id}: {e}")
+                continue
+
+        if recognized_user:
+            # Registrar evento de seguridad CON usuario
+            SecurityEvent.objects.create(
+                event_type='face_recognition',
+                description=f'Rostro reconocido: {recognized_user.username}',
+                user=recognized_user  # 👈 Usuario reconocido
+            )
+            
+            return Response({
+                'user': UserSerializer(recognized_user).data,
+                'confidence': confidence,
+                'message': 'Face recognized successfully'
+            }, status=status.HTTP_200_OK)
+        else:
+            # Registrar evento de seguridad SIN usuario (acceso no autorizado)
+            SecurityEvent.objects.create(
+                event_type='unauthorized_access',
+                description='Intento de acceso con rostro no reconocido'
+                # 👈 No pasamos 'user' aquí porque es acceso no autorizado
+            )
+            
+            return Response({
+                'message': 'Unknown face'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        print(f"Error in recognize_face_view: {str(e)}")
+        return Response({
+            'error': f'Error processing image: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # ------------------------
 # Seguridad - IA
@@ -386,25 +442,53 @@ def recognize_face_from_image(image_path):
     """
     Recibe una imagen y devuelve el usuario si reconoce su rostro.
     """
-    # Aquí puedes usar face_recognition o dlib
-    # Por ahora, simulamos
-    return None  # o un usuario si lo encuentra
+    try:
+        unknown_encoding = get_face_encoding(image_path)
+        if unknown_encoding is None:
+            return None
+
+        face_records = FaceRecord.objects.select_related('user').all()
+        
+        for record in face_records:
+            try:
+                known_encoding = np.array(list(map(float, record.face_encoding.split(','))))
+                result, distance = compare_faces(known_encoding, unknown_encoding)
+                
+                if result and distance < 0.6:
+                    return record.user
+                    
+            except (ValueError, IndexError) as e:
+                print(f"Error processing face record for user {record.user.id}: {e}")
+                continue
+
+        return None
+    except Exception as e:
+        print(f"Error in recognize_face_from_image: {str(e)}")
+        return None
 
 def recognize_plate_from_image(image_path):
     """
     Recibe una imagen y devuelve el número de placa detectado.
     """
-    image = cv2.imread(image_path)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # Aquí puedes usar un modelo de detección de placas
-    # Por ahora, usamos OCR simple
-    text = pytesseract.image_to_string(gray)
-    # Filtrar texto que parezca una placa
-    import re
-    plate = re.findall(r'[A-Z0-9]{3}-[A-Z0-9]{3}', text)  # Patrón simple
-    return plate[0] if plate else None
+    try:
+        image = cv2.imread(image_path)
+        if image is None:
+            return None
+            
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # Aquí puedes usar un modelo de detección de placas
+        # Por ahora, usamos OCR simple
+        text = pytesseract.image_to_string(gray)
+        # Filtrar texto que parezca una placa
+        import re
+        plate = re.findall(r'[A-Z0-9]{3}-[A-Z0-9]{3}', text)  # Patrón simple
+        return plate[0] if plate else None
+    except Exception as e:
+        print(f"Error in recognize_plate_from_image: {str(e)}")
+        return None
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def camera_security_event(request):
     """
     Vista para recibir imágenes de cámaras y procesarlas con IA.
@@ -417,37 +501,87 @@ def camera_security_event(request):
 
     # Decodificar imagen base64
     try:
-        img_binary = base64.b64decode(image_data)
-        img = Image.open(io.BytesIO(img_binary))
-        img_path = f'/tmp/camera_{camera_id}.jpg'  # temporal
-        img.save(img_path)
+        # Procesar imagen en memoria sin guardar archivo temporal
+        encoding = get_face_encoding_from_base64(image_data)
+        recognized_user = None
+        
+        if encoding is not None:
+            # Buscar usuario reconocido
+            face_records = FaceRecord.objects.select_related('user').all()
+            for record in face_records:
+                try:
+                    known_encoding = np.array(list(map(float, record.face_encoding.split(','))))
+                    result, distance = compare_faces(known_encoding, encoding)
+                    if result and distance < 0.6:
+                        recognized_user = record.user
+                        break
+                except (ValueError, IndexError) as e:
+                    continue
+
+        # Procesar placa (simulado)
+        recognized_plate = None  # recognize_plate_from_image no funciona sin archivo temporal
+
+        event_type = 'suspicious_activity'
+        description = 'Actividad sospechosa detectada.'
+
+        if recognized_user:
+            event_type = 'face_recognition'
+            description = f'Rostro reconocido: {recognized_user.username}'
+        elif recognized_plate:
+            event_type = 'plate_recognition'
+            description = f'Placa detectada: {recognized_plate}'
+
+        # Guardar evento
+        event = SecurityEvent.objects.create(
+            event_type=event_type,
+            description=description,
+            user=recognized_user,  # 👈 Puede ser None
+        )
+
+        return Response(SecurityEventSerializer(event).data, status=status.HTTP_201_CREATED)
+
     except Exception as e:
+        print(f"Error in camera_security_event: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Procesar imagen con IA
-    recognized_user = recognize_face_from_image(img_path)
-    recognized_plate = recognize_plate_from_image(img_path)
+# ------------------------
+# Vista para crear MaintenanceRequest
+# ------------------------
 
-    event_type = 'suspicious_activity'
-    description = 'Actividad sospechosa detectada.'
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_maintenance_request(request):
+    """
+    Vista para crear una solicitud de mantenimiento
+    """
+    try:
+        serializer = MaintenanceRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            # Asignar el usuario autenticado
+            maintenance_request = serializer.save()
+            return Response(MaintenanceRequestSerializer(maintenance_request).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(f"Error in create_maintenance_request: {str(e)}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    if recognized_user:
-        event_type = 'face_recognition'
-        description = f'Rostro reconocido: {recognized_user.username}'
-    elif recognized_plate:
-        event_type = 'plate_recognition'
-        description = f'Placa detectada: {recognized_plate}'
-    else:
-        # Aquí puedes usar un modelo de detección de objetos para "sospechoso"
-        # Por ahora, asumimos que si no se reconoce, es sospechoso
-        pass
+# ------------------------
+# Vista para crear Reservation
+# ------------------------
 
-    # Guardar evento
-    event = SecurityEvent.objects.create(
-        event_type=event_type,
-        description=description,
-        image=img_path.replace('/tmp/', 'security_images/'),  # Ajusta según tu sistema de archivos
-        user=recognized_user,
-    )
-
-    return Response(SecurityEventSerializer(event).data, status=status.HTTP_201_CREATED)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_reservation(request):
+    """
+    Vista para crear una reserva
+    """
+    try:
+        serializer = ReservationSerializer(data=request.data)
+        if serializer.is_valid():
+            # Asignar el usuario autenticado
+            reservation = serializer.save(user=request.user)
+            return Response(ReservationSerializer(reservation).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(f"Error in create_reservation: {str(e)}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -4,51 +4,96 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // 👈 NUEVO: estado de loading
 
   // 🔹 Cargar usuario desde localStorage al inicio
   useEffect(() => {
-    try {
-      const access = localStorage.getItem("access");
-      const refresh = localStorage.getItem("refresh");
-      const storedUser = localStorage.getItem("user");
+    const initializeAuth = async () => {
+      try {
+        const access = localStorage.getItem("access");
+        const storedUser = localStorage.getItem("user");
 
-      if (access && refresh && storedUser) {
-        setUser({
-          access,
-          refresh,
-          ...JSON.parse(storedUser), // 👈 guardamos también los datos del usuario
-        });
+        if (access && storedUser) {
+          const userData = JSON.parse(storedUser);
+          
+          // 👇 Aseguramos que user_type esté disponible como role para compatibilidad
+          const normalizedUser = {
+            ...userData,
+            role: userData.user_type, // 👈 Mantener compatibilidad
+            user_type: userData.user_type // 👈 Mantener original
+          };
+
+          setUser({
+            access,
+            refresh: localStorage.getItem("refresh"),
+            ...normalizedUser,
+          });
+        }
+      } catch (err) {
+        console.error("Error cargando user desde localStorage:", err);
+        localStorage.clear();
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Error cargando user desde localStorage:", err);
-      setUser(null);
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   // 🔹 Login → guardar en localStorage y en el estado
   const login = (data) => {
-    // data debe venir como { access, refresh, user: { username, email, role, ... } }
+    // Normalizar datos del usuario para compatibilidad
+    const normalizedUser = {
+      ...data.user,
+      role: data.user.user_type, // 👈 Para compatibilidad con componentes existentes
+      user_type: data.user.user_type // 👈 Mantener original
+    };
+
     localStorage.setItem("access", data.access);
     localStorage.setItem("refresh", data.refresh);
-    localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
 
     setUser({
       access: data.access,
       refresh: data.refresh,
-      ...data.user,
+      ...normalizedUser,
     });
   };
 
   // 🔹 Logout → limpiar todo
   const logout = () => {
-    localStorage.clear();
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    localStorage.removeItem("user");
     setUser(null);
   };
 
-  console.log("AuthContext user en render:", user);
+  // 🔹 Actualizar datos del usuario
+  const updateUser = (userData) => {
+    const normalizedUser = {
+      ...userData,
+      role: userData.user_type,
+      user_type: userData.user_type
+    };
+    
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
+    setUser(prev => ({
+      ...prev,
+      ...normalizedUser
+    }));
+  };
+
+  console.log("AuthContext user:", user);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      updateUser,
+      loading // 👈 Exportar loading
+    }}>
       {children}
     </AuthContext.Provider>
   );

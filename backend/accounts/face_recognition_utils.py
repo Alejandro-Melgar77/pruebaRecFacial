@@ -61,3 +61,31 @@ def recognize_face(image_path):
             return record.user
 
     return None
+
+def get_face_encoding_from_base64(base64_string):
+    """
+    Procesa imagen en base64 en lugar de ruta de archivo
+    """
+    try:
+        # Remover el prefijo si existe
+        if ',' in base64_string:
+            base64_string = base64_string.split(',')[1]
+        
+        # Decodificar base64
+        image_data = base64.b64decode(base64_string)
+        image = Image.open(io.BytesIO(image_data))
+        image = np.array(image)
+        
+        face_encodings = face_recognition.face_encodings(image)
+        return face_encodings[0] if face_encodings else None
+    except Exception as e:
+        print(f"Error processing base64 image: {e}")
+        return None
+
+def compare_faces(encoding1, encoding2, tolerance=0.6):
+    """
+    Compara dos codificaciones de rostros y devuelve True si coinciden.
+    """
+    result = face_recognition.compare_faces([encoding1], encoding2, tolerance=tolerance)
+    distance = face_recognition.face_distance([encoding1], encoding2)
+    return result[0], distance[0]

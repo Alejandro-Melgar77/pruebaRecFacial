@@ -1,0 +1,112 @@
+INFO 2025-10-01 12:21:36,291 autoreload 20204 17648 Watching for file changes with StatReloader
+INFO 2025-10-01 13:32:06,148 autoreload 21148 12324 Watching for file changes with StatReloader
+INFO 2025-10-01 13:42:50,776 autoreload 26884 27244 Watching for file changes with StatReloader
+INFO 2025-10-01 13:43:23,012 basehttp 26884 25688 "OPTIONS /api/auth/login/ HTTP/1.1" 200 0
+INFO 2025-10-01 13:43:23,729 basehttp 26884 25688 "POST /api/auth/login/ HTTP/1.1" 200 687
+INFO 2025-10-01 13:43:23,877 basehttp 26884 25688 "OPTIONS /api/users/ HTTP/1.1" 200 0
+INFO 2025-10-01 13:43:23,890 basehttp 26884 25688 "OPTIONS /api/units/ HTTP/1.1" 200 0
+INFO 2025-10-01 13:43:23,892 basehttp 26884 20456 "OPTIONS /api/security/events/ HTTP/1.1" 200 0
+INFO 2025-10-01 13:43:23,892 basehttp 26884 11176 "OPTIONS /api/security/events/ HTTP/1.1" 200 0
+INFO 2025-10-01 13:43:23,906 basehttp 26884 22236 "OPTIONS /api/units/ HTTP/1.1" 200 0
+INFO 2025-10-01 13:43:23,906 basehttp 26884 19736 "OPTIONS /api/users/ HTTP/1.1" 200 0
+INFO 2025-10-01 13:43:24,003 basehttp 26884 25688 "GET /api/security/events/ HTTP/1.1" 200 2
+INFO 2025-10-01 13:43:24,026 basehttp 26884 20456 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 13:43:24,108 basehttp 26884 12308 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 13:43:24,117 basehttp 26884 22236 "GET /api/security/events/ HTTP/1.1" 200 2
+INFO 2025-10-01 13:43:24,127 basehttp 26884 25688 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 13:43:24,179 basehttp 26884 20456 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 13:43:47,613 basehttp 26884 10928 "OPTIONS /api/face/recognize/ HTTP/1.1" 200 0
+WARNING 2025-10-01 13:43:48,985 log 26884 10928 Not Found: /api/face/recognize/
+WARNING 2025-10-01 13:43:48,986 basehttp 26884 10928 "POST /api/face/recognize/ HTTP/1.1" 404 26
+INFO 2025-10-01 13:43:54,548 basehttp 26884 10928 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 13:43:54,638 basehttp 26884 22456 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 13:47:06,860 basehttp 26884 16816 "OPTIONS /api/auth/register/ HTTP/1.1" 200 0
+WARNING 2025-10-01 13:47:06,919 log 26884 16816 Bad Request: /api/auth/register/
+WARNING 2025-10-01 13:47:06,920 basehttp 26884 16816 "POST /api/auth/register/ HTTP/1.1" 400 36
+INFO 2025-10-01 13:47:24,366 basehttp 26884 16816 "POST /api/auth/login/ HTTP/1.1" 200 687
+INFO 2025-10-01 13:47:24,550 basehttp 26884 16816 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 13:47:24,567 basehttp 26884 10636 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 13:47:24,613 basehttp 26884 13524 "GET /api/security/events/ HTTP/1.1" 200 164
+INFO 2025-10-01 13:47:24,663 basehttp 26884 18824 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 13:47:24,670 basehttp 26884 16816 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 13:47:24,687 basehttp 26884 10636 "GET /api/security/events/ HTTP/1.1" 200 164
+INFO 2025-10-01 13:47:31,336 basehttp 26884 10636 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 13:47:31,402 basehttp 26884 16816 "GET /api/users/ HTTP/1.1" 200 399
+WARNING 2025-10-01 13:48:23,271 log 26884 19736 Bad Request: /api/auth/register/
+WARNING 2025-10-01 13:48:23,272 basehttp 26884 19736 "POST /api/auth/register/ HTTP/1.1" 400 36
+INFO 2025-10-01 14:02:56,260 autoreload 26848 13100 Watching for file changes with StatReloader
+WARNING 2025-10-01 14:05:13,381 log 26848 6824 Bad Request: /api/auth/register/
+WARNING 2025-10-01 14:05:13,382 basehttp 26848 6824 "POST /api/auth/register/ HTTP/1.1" 400 43
+INFO 2025-10-01 14:06:22,871 basehttp 26848 10016 "POST /api/auth/login/ HTTP/1.1" 200 687
+INFO 2025-10-01 14:06:23,042 basehttp 26848 27488 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 14:06:23,101 basehttp 26848 19464 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 14:06:23,117 basehttp 26848 10016 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 14:06:23,143 basehttp 26848 27220 "GET /api/security/events/ HTTP/1.1" 200 164
+INFO 2025-10-01 14:06:23,183 basehttp 26848 19464 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 14:06:23,203 basehttp 26848 10016 "GET /api/security/events/ HTTP/1.1" 200 164
+INFO 2025-10-01 14:06:26,615 basehttp 26848 10016 "GET /api/users/ HTTP/1.1" 200 399
+INFO 2025-10-01 14:06:26,672 basehttp 26848 19464 "GET /api/users/ HTTP/1.1" 200 399
+WARNING 2025-10-01 14:06:43,149 log 26848 19464 Bad Request: /api/auth/register/
+WARNING 2025-10-01 14:06:43,150 basehttp 26848 19464 "POST /api/auth/register/ HTTP/1.1" 400 43
+INFO 2025-10-01 14:07:35,629 basehttp 26848 19464 "POST /api/auth/register/ HTTP/1.1" 201 202
+INFO 2025-10-01 14:07:42,799 basehttp 26848 19464 "POST /api/auth/login/ HTTP/1.1" 200 687
+INFO 2025-10-01 14:07:42,985 basehttp 26848 19464 "GET /api/users/ HTTP/1.1" 200 602
+INFO 2025-10-01 14:07:42,999 basehttp 26848 27220 "GET /api/security/events/ HTTP/1.1" 200 164
+INFO 2025-10-01 14:07:43,062 basehttp 26848 19464 "GET /api/security/events/ HTTP/1.1" 200 164
+INFO 2025-10-01 14:07:43,075 basehttp 26848 10016 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 14:07:43,128 basehttp 26848 19464 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 14:07:43,153 basehttp 26848 27488 "GET /api/users/ HTTP/1.1" 200 602
+INFO 2025-10-01 14:07:45,777 basehttp 26848 27488 "GET /api/users/ HTTP/1.1" 200 602
+INFO 2025-10-01 14:07:45,949 basehttp 26848 19464 "GET /api/users/ HTTP/1.1" 200 602
+INFO 2025-10-01 14:08:33,761 basehttp 26848 19464 "OPTIONS /api/face/register/ HTTP/1.1" 200 0
+INFO 2025-10-01 14:08:34,706 basehttp 26848 19464 "POST /api/face/register/ HTTP/1.1" 201 61
+ERROR 2025-10-01 14:08:49,989 log 26848 19464 Internal Server Error: /api/face/recognize/
+ERROR 2025-10-01 14:08:49,990 basehttp 26848 19464 "POST /api/face/recognize/ HTTP/1.1" 500 71
+ERROR 2025-10-01 14:08:58,085 log 26848 21336 Internal Server Error: /api/face/recognize/
+ERROR 2025-10-01 14:08:58,086 basehttp 26848 21336 "POST /api/face/recognize/ HTTP/1.1" 500 71
+INFO 2025-10-01 14:16:05,975 autoreload 26848 13100 C:\si2 2-2025\primer parcial si2\implementacion condomio\backend\accounts\views.py changed, reloading.
+INFO 2025-10-01 14:16:07,924 autoreload 26292 23456 Watching for file changes with StatReloader
+INFO 2025-10-01 14:16:20,884 autoreload 24948 15876 Watching for file changes with StatReloader
+ERROR 2025-10-01 14:16:40,777 log 24948 7408 Internal Server Error: /api/face/recognize/
+ERROR 2025-10-01 14:16:40,778 basehttp 24948 7408 "POST /api/face/recognize/ HTTP/1.1" 500 92
+INFO 2025-10-01 14:20:54,087 autoreload 24948 15876 C:\si2 2-2025\primer parcial si2\implementacion condomio\backend\accounts\models.py changed, reloading.
+INFO 2025-10-01 14:20:55,235 autoreload 21104 22420 Watching for file changes with StatReloader
+INFO 2025-10-01 14:28:29,039 autoreload 21104 22420 C:\si2 2-2025\primer parcial si2\implementacion condomio\backend\accounts\views.py changed, reloading.
+INFO 2025-10-01 14:28:30,941 autoreload 7716 17184 Watching for file changes with StatReloader
+INFO 2025-10-01 14:32:58,979 autoreload 1532 13408 Watching for file changes with StatReloader
+INFO 2025-10-01 14:33:20,598 basehttp 1532 24408 "POST /api/face/recognize/ HTTP/1.1" 200 278
+INFO 2025-10-01 14:33:45,166 basehttp 1532 24036 "GET /api/users/ HTTP/1.1" 200 602
+INFO 2025-10-01 14:33:45,246 basehttp 1532 27500 "GET /api/users/ HTTP/1.1" 200 602
+WARNING 2025-10-01 14:35:27,528 log 1532 26416 Bad Request: /api/auth/register/
+WARNING 2025-10-01 14:35:27,529 basehttp 1532 26416 "POST /api/auth/register/ HTTP/1.1" 400 103
+INFO 2025-10-01 14:35:35,519 basehttp 1532 26416 "POST /api/auth/register/ HTTP/1.1" 201 202
+WARNING 2025-10-01 14:35:51,483 log 1532 26676 Unauthorized: /api/auth/login/
+WARNING 2025-10-01 14:35:51,484 basehttp 1532 26676 "POST /api/auth/login/ HTTP/1.1" 401 71
+WARNING 2025-10-01 14:36:04,140 log 1532 26676 Unauthorized: /api/auth/login/
+WARNING 2025-10-01 14:36:04,140 basehttp 1532 26676 "POST /api/auth/login/ HTTP/1.1" 401 71
+WARNING 2025-10-01 14:36:18,763 log 1532 26676 Unauthorized: /api/auth/login/
+WARNING 2025-10-01 14:36:18,763 basehttp 1532 26676 "POST /api/auth/login/ HTTP/1.1" 401 71
+INFO 2025-10-01 14:36:33,145 basehttp 1532 26676 "POST /api/auth/login/ HTTP/1.1" 200 687
+INFO 2025-10-01 14:36:33,364 basehttp 1532 20076 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 14:36:33,386 basehttp 1532 13728 "GET /api/security/events/ HTTP/1.1" 200 327
+INFO 2025-10-01 14:36:33,430 basehttp 1532 27352 "GET /api/units/ HTTP/1.1" 200 2
+INFO 2025-10-01 14:36:33,454 basehttp 1532 26676 "GET /api/users/ HTTP/1.1" 200 805
+INFO 2025-10-01 14:36:33,578 basehttp 1532 20076 "GET /api/security/events/ HTTP/1.1" 200 327
+INFO 2025-10-01 14:36:33,618 basehttp 1532 27352 "GET /api/users/ HTTP/1.1" 200 805
+INFO 2025-10-01 14:36:36,441 basehttp 1532 27352 "GET /api/users/ HTTP/1.1" 200 805
+INFO 2025-10-01 14:36:36,607 basehttp 1532 20076 "GET /api/users/ HTTP/1.1" 200 805
+INFO 2025-10-01 14:37:10,609 basehttp 1532 20076 "POST /api/face/register/ HTTP/1.1" 201 61
+INFO 2025-10-01 14:37:24,053 basehttp 1532 20076 "POST /api/face/recognize/ HTTP/1.1" 200 278
+WARNING 2025-10-01 14:38:54,712 log 1532 18004 Bad Request: /api/face/recognize/
+WARNING 2025-10-01 14:38:54,713 basehttp 1532 18004 "POST /api/face/recognize/ HTTP/1.1" 400 39
+INFO 2025-10-01 14:39:06,005 basehttp 1532 27476 "POST /api/face/recognize/ HTTP/1.1" 200 278
+WARNING 2025-10-01 14:39:13,063 log 1532 27476 Not Found: /api/face/recognize/
+WARNING 2025-10-01 14:39:13,064 basehttp 1532 27476 "POST /api/face/recognize/ HTTP/1.1" 404 26
+WARNING 2025-10-01 14:39:21,268 log 1532 27476 Bad Request: /api/face/recognize/
+WARNING 2025-10-01 14:39:21,269 basehttp 1532 27476 "POST /api/face/recognize/ HTTP/1.1" 400 39
+WARNING 2025-10-01 14:39:26,731 log 1532 27156 Not Found: /api/face/recognize/
+WARNING 2025-10-01 14:39:26,732 basehttp 1532 27156 "POST /api/face/recognize/ HTTP/1.1" 404 26
+INFO 2025-10-01 14:39:30,578 basehttp 1532 27156 "GET /api/users/ HTTP/1.1" 200 805
+INFO 2025-10-01 14:39:30,663 basehttp 1532 8736 "GET /api/users/ HTTP/1.1" 200 805
+INFO 2025-10-01 14:39:48,389 basehttp 1532 14624 "POST /api/face/register/ HTTP/1.1" 201 61
+INFO 2025-10-01 14:39:55,989 basehttp 1532 9408 "POST /api/face/recognize/ HTTP/1.1" 200 278
