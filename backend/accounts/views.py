@@ -54,6 +54,15 @@ from .serializers import (
     RegisterSerializer,
 )
 
+# ------------------------
+# 🔥 OCR - IMPORTS TEMPORALMENTE COMENTADOS
+# ------------------------
+from google.cloud import vision
+import re
+import json
+from .models import VehiclePlate, VehicleAccessLog
+from .serializers import VehiclePlateSerializer, VehicleAccessLogSerializer, OCRPlateRecognitionSerializer
+
 User = get_user_model()
 
 # ------------------------
@@ -585,3 +594,193 @@ def create_reservation(request):
     except Exception as e:
         print(f"Error in create_reservation: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# ------------------------
+# 🔥 OCR RECONOCIMIENTO DE PLACAS - TEMPORALMENTE COMENTADO
+# ------------------------
+
+class VehiclePlateListView(generics.ListCreateAPIView):
+    queryset = VehiclePlate.objects.all()
+    serializer_class = VehiclePlateSerializer
+    permission_classes = [IsAuthenticated]
+
+class VehiclePlateDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = VehiclePlate.objects.all()
+    serializer_class = VehiclePlateSerializer
+    permission_classes = [IsAuthenticated]
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ocr_recognize_plate(request):
+    """
+    Vista para reconocimiento de placas usando Google Cloud Vision API
+    """
+    serializer = OCRPlateRecognitionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        image_data = serializer.validated_data['image']
+        camera_id = serializer.validated_data.get('camera_id', 'unknown')
+        
+        # Decodificar imagen base64
+        image_content = base64.b64decode(image_data.split(',')[1] if ',' in image_data else image_data)
+        
+        # Inicializar cliente de Google Vision
+        client = vision.ImageAnnotatorClient()
+        image = vision.Image(content=image_content)
+        
+        # Detectar texto en la imagen
+        response = client.text_detection(image=image)
+        texts = response.text_annotations
+        
+        if texts:
+            # Extraer y limpiar texto detectado
+            detected_text = texts[0].description
+            plate_number = extract_plate_number(detected_text)
+            
+            if plate_number:
+                # Verificar si la placa está autorizada
+                is_authorized = check_plate_authorization(plate_number)
+                confidence = calculate_confidence(detected_text, plate_number)
+                
+                # Guardar en el log de acceso
+                access_log = save_vehicle_access(
+                    plate_number, 
+                    image_content, 
+                    confidence, 
+                    is_authorized, 
+                    camera_id
+                )
+                
+                return Response({
+                    'success': True,
+                    'plate_number': plate_number,
+                    'confidence': confidence,
+                    'is_authorized': is_authorized,
+                    'access_granted': is_authorized,
+                    'log_id': access_log.id,
+                    'message': 'Placa reconocida exitosamente'
+                }, status=status.HTTP_200_OK)
+            else:
+                # Guardar intento fallido
+                save_vehicle_access(
+                    'UNKNOWN', 
+                    image_content, 
+                    0.0, 
+                    False, 
+                    camera_id,
+                    notes=f'Texto detectado pero no es placa válida: {detected_text}'
+                )
+                
+                return Response({
+                    'success': False,
+                    'message': 'No se pudo detectar una placa válida en la imagen'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({
+                'success': False,
+                'message': 'No se detectó texto en la imagen'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        print(f"Error en OCR plate recognition: {str(e)}")
+        return Response({
+            'success': False,
+            'error': f'Error procesando la imagen: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def extract_plate_number(text):
+    """
+    Extrae y valida el número de placa del texto detectado
+    """
+    # Limpiar texto y buscar patrones de placa
+    cleaned_text = re.sub(r'\s+', '', text.upper())
+    
+    # Patrones comunes de placas (ajustar según país)
+    patterns = [
+        r'[A-Z]{3}[0-9]{3}',           # ABC123
+        r'[A-Z]{2}[0-9]{3}[A-Z]{2}',   # AB123CD
+        r'[A-Z]{3}[0-9]{2}[A-Z]{1}',   # ABC12D
+        r'[0-9]{3}[A-Z]{3}',           # 123ABC
+    ]
+    
+    for pattern in patterns:
+        matches = re.findall(pattern, cleaned_text)
+        if matches:
+            return matches[0]
+    
+    return None
+
+def check_plate_authorization(plate_number):
+    """
+    Verifica si la placa está autorizada en el sistema
+    """
+    try:
+        plate = VehiclePlate.objects.get(
+            plate_number=plate_number, 
+            is_active=True, 
+            status='AUTHORIZED'
+        )
+        return True
+    except VehiclePlate.DoesNotExist:
+        return False
+
+def calculate_confidence(detected_text, plate_number):
+    """
+    Calcula la confianza del reconocimiento basado en similitud
+    """
+    plate_clean = re.sub(r'\s+', '', detected_text.upper())
+    if plate_number in plate_clean:
+        return 0.9
+    else:
+        return 0.7
+
+def save_vehicle_access(plate_number, image_content, confidence, is_authorized, camera_id, notes=''):
+    """
+    Guarda el registro de acceso vehicular
+    """
+    from django.core.files.base import ContentFile
+    from django.utils import timezone
+    
+    # Guardar imagen temporalmente
+    image_file = ContentFile(image_content)
+    filename = f'vehicle_access_{plate_number}_{timezone.now().strftime("%Y%m%d_%H%M%S")}.jpg'
+    
+    access_log = VehicleAccessLog(
+        plate_number=plate_number,
+        confidence_score=confidence,
+        is_authorized=is_authorized,
+        access_granted=is_authorized,
+        access_type='GRANTED' if is_authorized else 'DENIED',
+        camera_location=camera_id,
+        notes=notes
+    )
+    
+    access_log.vehicle_image.save(filename, image_file, save=True)
+    return access_log
+
+# Vista para obtener logs de acceso
+class VehicleAccessLogListView(generics.ListAPIView):
+    serializer_class = VehicleAccessLogSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = VehicleAccessLog.objects.all().order_by('-timestamp')
+        
+        # Filtros opcionales
+        plate_number = self.request.query_params.get('plate_number')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        access_type = self.request.query_params.get('access_type')
+        
+        if plate_number:
+            queryset = queryset.filter(plate_number__icontains=plate_number)
+        if start_date:
+            queryset = queryset.filter(timestamp__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(timestamp__date__lte=end_date)
+        if access_type:
+            queryset = queryset.filter(access_type=access_type)
+            
+        return queryset

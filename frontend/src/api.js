@@ -54,7 +54,7 @@ export const deleteUnit = (id) => API.delete(`/units/${id}/`);
 // Endpoints de áreas comunes
 export const getCommonAreas = () => API.get("/common-areas/");
 export const createReservation = (data) => API.post("/reservations/", data);
-export const getReservations = () => API.get("/reservations/"); // 👈 NUEVO
+export const getReservations = () => API.get("/reservations/");
 
 // Endpoints de expensas
 export const getExpenses = () => API.get("/expenses/");
@@ -73,4 +73,32 @@ export const createMaintenanceRequest = (data) => API.post("/maintenance/request
 
 // Endpoints de notificaciones
 export const getNotifications = () => API.get("/notifications/");
-export const markNotificationAsRead = (id) => API.patch(`/notifications/${id}/read/`);
+export const markNotificationAsRead = (id) => API.patch("/notifications/${id}/read/");
+
+// ------------------------
+// 🔥 OCR - ENDPOINTS DE PLACAS VEHICULARES
+// ------------------------
+
+export const vehicleAPI = {
+  // Gestión de placas
+  getPlates: () => API.get("/vehicle-plates/"),
+  createPlate: (data) => API.post("/vehicle-plates/", data),
+  updatePlate: (id, data) => API.put(`/vehicle-plates/${id}/`, data),
+  deletePlate: (id) => API.delete(`/vehicle-plates/${id}/`),
+  
+  // Reconocimiento OCR
+  recognizePlate: (imageData, cameraId = '') => 
+    API.post("/ocr/recognize-plate/", { 
+      image: imageData, 
+      camera_id: cameraId 
+    }),
+  
+  // Logs de acceso
+  getAccessLogs: (params = {}) => API.get("/vehicle-access-logs/", { params }),
+};
+
+// Export individual para compatibilidad
+export const recognizePlate = (imageData) => vehicleAPI.recognizePlate(imageData);
+export const getVehiclePlates = () => vehicleAPI.getPlates();
+export const createVehiclePlate = (data) => vehicleAPI.createPlate(data);
+export const getVehicleAccessLogs = (params) => vehicleAPI.getAccessLogs(params);

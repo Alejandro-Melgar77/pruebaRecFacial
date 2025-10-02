@@ -1,10 +1,10 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // 👈 NUEVO: estado de loading
+  const [loading, setLoading] = useState(true);
 
   // 🔹 Cargar usuario desde localStorage al inicio
   useEffect(() => {
@@ -92,9 +92,20 @@ export const AuthProvider = ({ children }) => {
       login, 
       logout, 
       updateUser,
-      loading // 👈 Exportar loading
+      loading
     }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+// 🔹 Hook personalizado para usar el contexto de autenticación
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth debe ser usado dentro de un AuthProvider");
+  }
+  return context;
+};
+
+export default AuthContext;

@@ -19,13 +19,21 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ------------------------
-# Google Cloud Credentials
+# Google Cloud Vision Configuration
 # ------------------------
-# Asegúrate de que la variable de entorno esté cargada
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = config(
+
+# Ruta absoluta al archivo de credenciales
+GOOGLE_CREDENTIALS_PATH = os.path.join(BASE_DIR, config(
     "GOOGLE_APPLICATION_CREDENTIALS", 
     default="smart-condominium-credentials.json"
-)
+))
+
+# Verificar que el archivo de credenciales existe
+if os.path.exists(GOOGLE_CREDENTIALS_PATH):
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_CREDENTIALS_PATH
+    print(f"✅ Google Cloud Vision credentials loaded from: {GOOGLE_CREDENTIALS_PATH}")
+else:
+    print(f"⚠️  Google Cloud Vision credentials file not found at: {GOOGLE_CREDENTIALS_PATH}")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/  
@@ -251,11 +259,23 @@ FACE_RECOGNITION_TOLERANCE = 0.6
 FACE_RECOGNITION_MODEL = 'hog'  # 'hog' para CPU, 'cnn' para GPU (requiere GPU)
 
 # ------------------------
+# OCR Plate Recognition Configuration
+# ------------------------
+
+OCR_PLATE_CONFIDENCE_THRESHOLD = 0.7
+OCR_PLATE_PATTERNS = [
+    r'[A-Z]{3}[0-9]{3}',           # ABC123
+    r'[A-Z]{2}[0-9]{3}[A-Z]{2}',   # AB123CD
+    r'[A-Z]{3}[0-9]{2}[A-Z]{1}',   # ABC12D
+    r'[0-9]{3}[A-Z]{3}',           # 123ABC
+]
+
+# ------------------------
 # File Upload Configuration
 # ------------------------
 
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB (aumentado para imágenes de vehículos)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
 
 # ------------------------
 # Security Settings (para producción)
@@ -309,6 +329,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'google.cloud.vision': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
     },
 }
 
@@ -321,9 +346,11 @@ os.makedirs(os.path.join(MEDIA_ROOT, 'security_images'), exist_ok=True)
 os.makedirs(os.path.join(MEDIA_ROOT, 'maintenance_requests'), exist_ok=True)
 os.makedirs(os.path.join(MEDIA_ROOT, 'face_images'), exist_ok=True)
 os.makedirs(os.path.join(MEDIA_ROOT, 'visitor_qr'), exist_ok=True)
+os.makedirs(os.path.join(MEDIA_ROOT, 'vehicle_access'), exist_ok=True)  # 👈 NUEVO directorio para OCR
 
 # Crear directorio de logs
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 
 print(f"Media root: {MEDIA_ROOT}")
 print(f"Static root: {STATIC_ROOT}")
+print(f"Google Cloud Vision configured: {os.path.exists(GOOGLE_CREDENTIALS_PATH) if GOOGLE_CREDENTIALS_PATH else 'No credentials path'}")

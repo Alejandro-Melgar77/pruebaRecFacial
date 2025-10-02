@@ -4,12 +4,12 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
-import PrivateRoute from './PrivateRoute' // Asegúrate de la ruta correcta
+import PrivateRoute from './PrivateRoute'
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import RoleManagement from "./pages/RoleManagement";
 
-// Nuevas vistas que ya creamos
+// Vistas existentes
 import ManageUsers from "./pages/ManageUsers";
 import FaceRegister from "./pages/FaceRegister";
 import FaceRecognize from "./pages/FaceRecognize";
@@ -21,6 +21,11 @@ import ViewBills from "./pages/ViewBills";
 import RequestMaintenance from "./pages/RequestMaintenance";
 import ViewReports from "./pages/ViewReports";
 import ViewVisitors from "./pages/ViewVisitors";
+
+// 🔥 NUEVAS VISTAS - OCR DE PLACAS
+import VehiclePlateManagement from "./pages/VehiclePlateManagement";
+import PlateRecognition from "./pages/PlateRecognition";
+import VehicleAccessLog from "./pages/VehicleAccessLog";
 
 function App() {
   return (
@@ -59,7 +64,8 @@ function App() {
               </PrivateRoute>
             }
           />
-          {/* Nuevas rutas */}
+          
+          {/* Rutas existentes */}
           <Route
             path="/manage-users"
             element={
@@ -145,6 +151,32 @@ function App() {
             element={
               <PrivateRoute allowedRoles={["admin", "security"]}>
                 <ViewVisitors />
+              </PrivateRoute>
+            }
+          />
+
+          {/* 🔥 NUEVAS RUTAS - OCR DE PLACAS */}
+          <Route
+            path="/vehicle-plates"
+            element={
+              <PrivateRoute allowedRoles={["admin", "security"]}>
+                <VehiclePlateManagement />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/plate-recognition"
+            element={
+              <PrivateRoute allowedRoles={["admin", "security"]}>
+                <PlateRecognition />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/vehicle-access-logs"
+            element={
+              <PrivateRoute allowedRoles={["admin", "security"]}>
+                <VehicleAccessLog />
               </PrivateRoute>
             }
           />

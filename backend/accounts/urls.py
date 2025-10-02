@@ -74,4 +74,12 @@ urlpatterns = [
     # Mantenimiento
     # ------------------------
     path('maintenance/requests/', views.MaintenanceRequestListView.as_view(), name='maintenance-request-list'),
+
+    # ------------------------
+    # 🔥 OCR RECONOCIMIENTO DE PLACAS - TEMPORALMENTE COMENTADO
+    # ------------------------
+    path('vehicle-plates/', views.VehiclePlateListView.as_view(), name='vehicle-plate-list'),
+    path('vehicle-plates/<int:pk>/', views.VehiclePlateDetailView.as_view(), name='vehicle-plate-detail'),
+     path('ocr/recognize-plate/', views.ocr_recognize_plate, name='ocr-recognize-plate'),
+     path('vehicle-access-logs/', views.VehicleAccessLogListView.as_view(), name='vehicle-access-logs'),
 ]
